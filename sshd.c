@@ -2265,10 +2265,14 @@ do_ssh2_kex(void)
 {
 	char *myproposal[PROPOSAL_MAX] = { KEX_SERVER };
 	struct kex *kex;
+	char *cp;
 	int r;
 
-	myproposal[PROPOSAL_KEX_ALGS] = compat_kex_proposal(
-	    options.kex_algorithms);
+	if ((cp = kex_names_cat(options.kex_algorithms, 
+	   "kex-strict-s-v00@openssh.com")) == NULL)
+		fatal("kex_names_cat");
+
+	myproposal[PROPOSAL_KEX_ALGS] = compat_kex_proposal(cp);
 	myproposal[PROPOSAL_ENC_ALGS_CTOS] = compat_cipher_proposal(
 	    options.ciphers);
 	myproposal[PROPOSAL_ENC_ALGS_STOC] = compat_cipher_proposal(
@@ -2325,6 +2329,7 @@ do_ssh2_kex(void)
 	packet_send();
 	packet_write_wait();
 #endif
+	free(cp);
 	debug("KEX done");
 }
 

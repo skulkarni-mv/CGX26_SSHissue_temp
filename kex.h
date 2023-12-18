@@ -104,6 +104,7 @@ enum kex_exchange {
 };
 
 #define KEX_INIT_SENT	0x0001
+#define KEX_INITIAL    0x0002
 
 struct sshenc {
 	char	*name;
@@ -142,6 +143,7 @@ struct kex {
 	u_int	kex_type;
 	char	*server_sig_algs;
 	int	ext_info_c;
+	int	kex_strict;
 	struct sshbuf *my;
 	struct sshbuf *peer;
 	sig_atomic_t done;

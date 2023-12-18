@@ -165,7 +165,8 @@ ssh_kex2(char *host, struct sockaddr *hostaddr, u_short port)
 	xxx_host = host;
 	xxx_hostaddr = hostaddr;
 
-	if ((s = kex_names_cat(options.kex_algorithms, "ext-info-c")) == NULL)
+	if ((s = kex_names_cat(options.kex_algorithms,
+	    "ext-info-c,kex-strict-c-v00@openssh.com")) == NULL)
 		fatal("%s: kex_names_cat", __func__);
 	myproposal[PROPOSAL_KEX_ALGS] = compat_kex_proposal(s);
 	myproposal[PROPOSAL_ENC_ALGS_CTOS] =
@@ -291,7 +292,6 @@ struct cauthmethod {
 };
 
 int	input_userauth_service_accept(int, u_int32_t, struct ssh *);
-int	input_userauth_ext_info(int, u_int32_t, struct ssh *);
 int	input_userauth_success(int, u_int32_t, struct ssh *);
 int	input_userauth_success_unexpected(int, u_int32_t, struct ssh *);
 int	input_userauth_failure(int, u_int32_t, struct ssh *);
@@ -402,7 +402,7 @@ ssh_userauth2(const char *local_user, const char *server_user, char *host,
 
 	ssh->authctxt = &authctxt;
 	ssh_dispatch_init(ssh, &input_userauth_error);
-	ssh_dispatch_set(ssh, SSH2_MSG_EXT_INFO, &input_userauth_ext_info);
+	ssh_dispatch_set(ssh, SSH2_MSG_EXT_INFO, kex_input_ext_info);
 	ssh_dispatch_set(ssh, SSH2_MSG_SERVICE_ACCEPT, &input_userauth_service_accept);
 	ssh_dispatch_run_fatal(ssh, DISPATCH_BLOCK, &authctxt.success);	/* loop until success */
 	ssh->authctxt = NULL;
@@ -449,12 +449,6 @@ input_userauth_service_accept(int type, u_int32_t seq, struct ssh *ssh)
 }
 
 /* ARGSUSED */
-int
-input_userauth_ext_info(int type, u_int32_t seqnr, struct ssh *ssh)
-{
-	return kex_input_ext_info(type, seqnr, ssh);
-}
-
 void
 userauth(Authctxt *authctxt, char *authlist)
 {
@@ -534,6 +528,7 @@ input_userauth_success(int type, u_int32_t seq, struct ssh *ssh)
 	free(authctxt->methoddata);
 	authctxt->methoddata = NULL;
 	authctxt->success = 1;			/* break out */
+	ssh_dispatch_set(ssh, SSH2_MSG_EXT_INFO, dispatch_protocol_error);
 	return 0;
 }
 
